@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Runtime
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+coverage/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# TypeScript
+*.tsbuildinfo
+
+# NestJS cache
+.nest-cli.json
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+
+# ESLint cache
+.eslintcache
+
+# Package manager cache
+.npm/
+
+# Prisma (if using SQLite)
+prisma/*.db
+prisma/*.db-journal
+
+# Uploads (if generated at runtime)
+uploads/
+
+# Test output
+test-results/

@@ -1,0 +1,191 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PARENT
+  TUTOR
+}
+
+enum CaseStatus {
+  OPEN
+  MATCHED
+  CLOSED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum CaseSubject {
+  MATHEMATICS
+  ENGLISH
+  CHINESE
+  PHYSICS
+  CHEMISTRY
+  BIOLOGY
+  HISTORY
+  GEOGRAPHY
+  ECONOMICS
+  OTHER
+}
+
+enum CaseLevel {
+  P1
+  P2
+  P3
+  P4
+  P5
+  P6
+  S1
+  S2
+  S3
+  S4
+  S5
+  JC1
+  JC2
+}
+
+// User accounts - shared across both roles
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // hashed bcrypt password
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  parent        Parent?
+  tutor         Tutor?
+  cases         Case[]
+  caseInvites   CaseInvitation[]
+  documents     Document[]
+  tutorDocuments TutorDocument[]
+
+  @@index([email])
+  @@index([role])
+}
+
+// Parent profile - one-to-one with User
+model Parent {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Tutor profile - one-to-one with User
+model Tutor {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName String
+  bio       String?    // Short bio/introduction
+  qualifications String? // JSON stored as string or free-text
+  experiences String?    // JSON stored as string or free-text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  documents TutorDocument[]
+  caseInvitations CaseInvitation[]
+
+  @@index([userId])
+}
+
+// Documents uploaded by tutor to their profile
+model TutorDocument {
+  id        String   @id @default(cuid())
+  tutorId   String
+  tutor     Tutor    @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filename  String   // original filename, stored safely
+  storePath String   // secure path on disk
+  mimeType  String
+  size      Int
+  uploadedAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tutorId])
+  @@index([userId])
+}
+
+// Tuition case - parent's request for a tutor
+model Case {
+  id             String   @id @default(cuid())
+  title          String
+  subject        CaseSubject
+  level          CaseLevel
+  location       String
+  budgetPerHour  Float
+  description    String?
+  status         CaseStatus @default(OPEN)
+  ownerId        String
+  owner          User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  documents      Document[]
+  caseInvitations CaseInvitation[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([subject])
+  @@index([level])
+}
+
+// Invitations from parent to tutor for a specific case
+model CaseInvitation {
+  id        String   @id @default(cuid())
+  caseId    String
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  tutorId   String
+  tutor     Tutor    @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  invitedById String
+  invitedBy User     @relation(fields: [invitedById], references: [id], onDelete: Cascade)
+  status    InvitationStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Unique constraint to prevent duplicate invitations
+  @@unique([caseId, tutorId])
+  @@index([caseId])
+  @@index([tutorId])
+  @@index([invitedById])
+}
+
+// Documents for a case (uploaded by parent or tutor)
+model Document {
+  id        String   @id @default(cuid())
+  caseId    String
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  uploadedById String
+  uploadedBy User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  filename  String   // original filename
+  storePath String   // secure storage path
+  mimeType  String
+  size      Int
+  uploadedAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([caseId])
+  @@index([uploadedById])
+}
